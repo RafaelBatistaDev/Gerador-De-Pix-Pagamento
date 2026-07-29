@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <meta name="theme-color" content="#820AD1">
+  <meta name="description" content="Gerador de cobranças PIX para PDV com QR Code e Copia e Cola — Padrão EMV BR Code do Banco Central. Ideal para pontos de venda.">
+  <meta name="author" content="Rafael Batista">
+  <meta property="og:title" content="PIX Gerador PDV — QR Code + Copia e Cola">
+  <meta property="og:description" content="Ferramenta profissional para geração de cobranças PIX em PDVs. Gratuito, offline, sem servidor.">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="pt_BR">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='8' r='3.5' fill='%23820AD1'/><path d='M5 20c0-3.866 3.134-7 7-7s7 3.134 7 7' stroke='%23820AD1' stroke-width='2' stroke-linecap='round' fill='none'/></svg>">
+  <title>PIX Gerador PDV — Cobranças PIX Profissional</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0 }
+    :root {
+      --bg: #f0eef5;
+      --surface: #ffffff;
+      --surface2: #f7f5fa;
+      --border: #e8e4f0;
+      --border2: #ddd8ea;
+      --text: #1a1a2e;
+      --muted: #8b85a0;
+      --accent: #820AD1;
+      --accent-d: #6a08ab;
+      --accent-light: #9c1be0;
+      --accent-bg: rgba(130,10,209,.07);
+      --accent-bd: rgba(130,10,209,.22);
+      --accent-text: #820AD1;
+      --red: #e53935;
+      --red-bg: rgba(229,57,53,.07);
+      --red-bd: rgba(229,57,53,.22);
+      --yellow: #f59e0b;
+      --yellow-bg: rgba(245,158,11,.07);
+      --yellow-bd: rgba(245,158,11,.22);
+      --mono: 'DM Mono', monospace;
+      --sans: 'Nunito', sans-serif;
+      --r: 12px;
+      --rl: 18px;
+      --shadow: 0 2px 12px rgba(130,10,209,.08), 0 1px 3px rgba(0,0,0,.06);
+      --shadow-hover: 0 6px 24px rgba(130,10,209,.14), 0 2px 8px rgba(0,0,0,.08);
+      --transition: .22s cubic-bezier(.4,0,.2,1);
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+    }
+
+    html, body { min-height: 100%; background: var(--bg); color: var(--text); font-family: var(--sans) }
+    body {
+      display: flex; flex-direction: column; align-items: center; padding: 0 0 80px;
+      background-image:
+        radial-gradient(ellipse 80% 50% at 50% -5%, rgba(130,10,209,.13) 0%, transparent 55%),
+        radial-gradient(ellipse 40% 30% at 90% 10%, rgba(130,10,209,.06) 0%, transparent 50%);
+    }
+
+    /* ── HEADER ── */
+    header { width: 100%; max-width: 640px; padding: 0 0 28px; display: flex; flex-direction: column; gap: 0 }
+    .header-banner {
+      background: linear-gradient(135deg, #820AD1 0%, #5c0696 60%, #420070 100%);
+      width: 100%; padding: 44px 28px 36px; display: flex; flex-direction: column; gap: 6px;
+      border-radius: 0 0 28px 28px;
+      box-shadow: 0 4px 24px rgba(130,10,209,.28);
+      position: relative; overflow: hidden;
+    }
+    .header-banner::before {
+      content: ''; position: absolute; top: -40px; right: -40px;
+      width: 180px; height: 180px; background: rgba(255,255,255,.05); border-radius: 50%;
+    }
+    .header-banner::after {
+      content: ''; position: absolute; bottom: -60px; right: 30px;
+      width: 130px; height: 130px; background: rgba(255,255,255,.04); border-radius: 50%;
+    }
+    .logo-row { display: flex; align-items: center; gap: 12px; position: relative; z-index: 1 }
+    .logo-icon {
+      width: 48px; height: 48px; background: rgba(255,255,255,.20);
+      border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; position: relative;
+    }
+    .logo-icon::before {
+      content: ''; position: absolute; width: 58px; height: 58px;
+      border-radius: 50%; background: rgba(255,255,255,.10);
+    }
+    .logo-icon svg { width: 26px; height: 26px; position: relative; z-index: 1; fill: #fff }
+    h1 { font-size: 20px; font-weight: 900; letter-spacing: -.3px; color: #fff }
+    .sub { font-size: 11px; color: rgba(255,255,255,.7); font-family: var(--mono); position: relative; z-index: 1 }
+
+    /* ── MAIN ── */
+    main { width: 100%; max-width: 640px; padding: 0 20px; display: flex; flex-direction: column; gap: 16px; margin-top: -6px }
+    .card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--rl);
+      padding: 24px; box-shadow: var(--shadow); transition: box-shadow .2s;
+    }
+    .card:hover { box-shadow: var(--shadow-hover) }
+    .sec { font-size: 10px; font-weight: 700; letter-spacing: 1.8px; text-transform: uppercase; color: var(--muted); margin-bottom: 18px; font-family: var(--mono) }
+
+    /* ── TABS ── */
+    .tabs { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 28px; justify-content: center }
+    .tab {
+      display: flex; flex-direction: column; align-items: center; gap: 8px; cursor: pointer;
+      width: 72px; background: none; border: none; padding: 0;
+      font-family: var(--sans); font-size: 11px; font-weight: 600;
+      color: var(--text); transition: all var(--transition); position: relative;
+    }
+    .tab svg { width: 28px; height: 28px; position: absolute; top: 18px; left: 50%; transform: translateX(-50%); z-index: 2 }
+    .tab::before {
+      content: ''; width: 64px; height: 64px; border-radius: 50%;
+      background: #f0f0f0; display: flex; align-items: center; justify-content: center;
+      position: relative; transition: all var(--transition); z-index: 1;
+    }
+    .tab:hover::before { background: #e4e4e4; transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,.12) }
+    .tab:active::before { background: #d8d8d8; transform: scale(.96) }
+    .tab[aria-selected="true"]::before {
+      background: linear-gradient(135deg, var(--accent), var(--accent-d));
+      box-shadow: 0 8px 24px rgba(130,10,209,.3); transform: translateY(-3px);
+    }
+    .tab[aria-selected="true"] svg { stroke: #fff }
+    .tab span { font-size: 11px; color: var(--text); text-align: center; line-height: 1.3; position: relative; z-index: 2; margin-top: 4px }
+    .tab[aria-selected="true"] span { color: var(--accent); font-weight: 700 }
+    .tab:disabled { pointer-events: none; opacity: .45; cursor: not-allowed }
+
+    /* ── FIELDS ── */
+    .fields { display: flex; flex-direction: column; gap: 16px }
+    .field { display: flex; flex-direction: column; gap: 6px }
+    label { font-size: 11px; color: var(--muted); font-family: var(--sans); font-weight: 700; letter-spacing: .5px; text-transform: uppercase }
+    .hint { font-size: 11px; color: var(--muted); font-family: var(--mono); margin-top: 2px; line-height: 1.6 }
+    input[type="text"], input[type="number"], input[type="tel"] {
+      background: var(--surface2); border: 1.5px solid var(--border2); border-radius: var(--r);
+      color: var(--text); font-family: var(--mono); font-size: 14px; padding: 13px 15px; width: 100%;
+      transition: border-color .2s, box-shadow .2s; outline: none;
+    }
+    input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(130,10,209,.1); background: #fff }
+    input[data-valid="true"] { border-color: #22c55e }
+    input[data-valid="false"] { border-color: var(--red) }
+    input::placeholder { color: #c4bdd4 }
+    input:disabled { background: var(--surface2); border-color: var(--border); color: var(--muted); cursor: not-allowed; opacity: .55 }
+    input:disabled::placeholder { color: #d4cfe0 }
+
+    .badge-val {
+      display: inline-flex; align-items: center; gap: 5px; font-family: var(--mono); font-size: 11px;
+      padding: 4px 11px; border-radius: 99px; margin-top: 3px; width: fit-content; transition: all .2s;
+    }
+    .badge-val[hidden] { display: none }
+    .badge-val[data-valid="true"] { background: rgba(34,197,94,.08); color: #16a34a; border: 1px solid rgba(34,197,94,.25) }
+    .badge-val[data-valid="false"] { background: var(--red-bg); color: var(--red); border: 1px solid var(--red-bd) }
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px }
+
+    /* ── BUTTONS ── */
+    .btn-gerar {
+      width: 100%; padding: 16px; background: linear-gradient(135deg, #820AD1, #6a08ab);
+      color: #fff; border: none; border-radius: 12px;
+      font-family: var(--sans); font-size: 15px; font-weight: 800;
+      cursor: pointer; margin-top: 6px; transition: all var(--transition); letter-spacing: .2px;
+      box-shadow: 0 4px 16px rgba(130,10,209,.3); position: relative; overflow: hidden;
+    }
+    .btn-gerar:hover { box-shadow: 0 8px 28px rgba(130,10,209,.4); transform: translateY(-2px) }
+    .btn-gerar:active { transform: scale(.97) translateY(0); box-shadow: 0 2px 8px rgba(130,10,209,.3) }
+    .btn-gerar:disabled { opacity: .5; cursor: not-allowed; transform: none }
+
+    .btn {
+      background: var(--surface2); border: 1.5px solid var(--border2); border-radius: 10px;
+      color: var(--text); font-family: var(--mono); font-size: 11.5px; font-weight: 600;
+      padding: 9px 18px; cursor: pointer; transition: all var(--transition); white-space: nowrap;
+      position: relative; overflow: hidden;
+    }
+    .btn:hover { border-color: var(--accent-bd); color: var(--accent); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(130,10,209,.15) }
+    .btn[data-copied="true"] { background: var(--accent-bg); border-color: var(--accent-bd); color: var(--accent) }
+
+    .btn-nova-venda {
+      background: var(--accent-bg); border: 1.5px solid var(--accent-bd);
+      color: var(--accent); font-family: var(--mono); font-size: 12px;
+      padding: 10px 20px; border-radius: 10px; cursor: pointer;
+      transition: all var(--transition); font-weight: 700;
+    }
+    .btn-nova-venda:hover { border-color: var(--accent); color: var(--accent); transform: translateY(-2px); box-shadow: 0 6px 16px rgba(130,10,209,.3) }
+
+    .lock-toggle {
+      display: flex; align-items: center; gap: 6px; padding: 9px 16px;
+      background: var(--surface2); border: 1.5px solid var(--border2);
+      font-size: 12px; font-family: var(--mono); color: var(--muted);
+      border-radius: 10px; cursor: pointer; transition: all var(--transition); font-weight: 600;
+    }
+    .lock-toggle:hover { border-color: var(--accent-bd); color: var(--accent); transform: translateY(-1px); box-shadow: 0 3px 10px rgba(130,10,209,.15) }
+    .lock-toggle[aria-pressed="true"] { background: var(--accent-bg); border-color: var(--accent-bd); color: var(--accent); box-shadow: 0 3px 10px rgba(130,10,209,.15) }
+
+    /* ── RESULTADO ── */
+    #resultado { display: none; animation: fadeUp .35s ease }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(12px) } to { opacity: 1; transform: translateY(0) } }
+    .qr-block {
+      display: flex; gap: 24px; align-items: flex-start; margin-bottom: 24px;
+      background: linear-gradient(135deg, rgba(130,10,209,.04), rgba(130,10,209,.01));
+      border: 1px solid var(--accent-bd); border-radius: var(--r); padding: 18px;
+    }
+    #qr-img {
+      width: 150px; height: 150px; border-radius: 12px; border: 2px solid var(--accent-bd);
+      background: #fff; flex-shrink: 0; box-shadow: 0 2px 12px rgba(130,10,209,.12);
+    }
+    #qr-img[data-error="true"] { background: var(--red-bg) !important; border-color: var(--red-bd) !important }
+    .qr-meta { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 14px }
+    .mg { display: flex; flex-direction: column; gap: 3px }
+    .ml { font-size: 10px; color: var(--muted); font-family: var(--mono); letter-spacing: .9px; text-transform: uppercase }
+    .mv { font-size: 14px; font-weight: 700; word-break: break-all; color: var(--text) }
+    .mv-big { font-size: 30px; font-weight: 900; color: var(--accent); letter-spacing: -1.5px }
+
+    .cec { display: flex; flex-direction: column; gap: 8px; margin-bottom: 18px }
+    .cec-head { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px }
+    .cec-lbl { font-size: 10px; font-family: var(--mono); letter-spacing: .9px; text-transform: uppercase; color: var(--muted); font-weight: 600 }
+    .cec-box { background: var(--surface2); border: 1.5px solid var(--border2); border-radius: var(--r); padding: 13px 15px; display: flex; align-items: flex-start; gap: 10px }
+    .cec-txt { flex: 1; font-family: var(--mono); font-size: 12px; word-break: break-all; color: var(--text); line-height: 1.6 }
+    .cec-box-highlight { border-color: var(--accent-bd); background: var(--accent-bg) }
+    .cec-box-highlight .cec-txt { color: var(--text) }
+
+    .info {
+      background: var(--yellow-bg); border: 1.5px solid var(--yellow-bd);
+      border-radius: var(--r); padding: 12px 15px;
+      font-size: 12px; font-family: var(--mono); color: #92620a; line-height: 1.6; margin-bottom: 16px;
+    }
+    .info-success { background: var(--accent-bg) !important; border-color: var(--accent-bd) !important; color: var(--accent) !important }
+    .divider { height: 1px; background: var(--border); margin: 20px 0 }
+
+    .debug-box {
+      background: var(--surface2); border: 1.5px solid var(--border2);
+      border-radius: var(--r); padding: 14px; font-family: var(--mono); font-size: 10px;
+      color: var(--muted); white-space: pre; overflow-x: auto; line-height: 2;
+    }
+    .badge-crc { font-family: var(--mono); font-size: 11px; padding: 4px 11px; border-radius: 99px; font-weight: 600 }
+    .badge-crc[data-valid="true"] { background: rgba(34,197,94,.08); color: #16a34a; border: 1px solid rgba(34,197,94,.25) }
+    .badge-crc[data-valid="false"] { background: var(--red-bg); color: var(--red); border: 1px solid var(--red-bd) }
+    .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 18px; align-items: center }
+
+    /* ── FLUTUANTE ── */
+    .nova-venda-flutuante {
+      position: fixed; bottom: 24px; right: 20px; z-index: 100;
+      background: linear-gradient(135deg, #820AD1, #6a08ab); color: #fff; border: none;
+      border-radius: 12px; padding: 14px 24px; font-family: var(--sans); font-weight: 800; font-size: 14px;
+      cursor: pointer; box-shadow: 0 6px 24px rgba(130,10,209,.35);
+      display: none; align-items: center; gap: 8px; transition: all var(--transition);
+    }
+    .nova-venda-flutuante:hover { transform: translateY(-3px); box-shadow: 0 10px 32px rgba(130,10,209,.4) }
+    .nova-venda-flutuante:active { transform: scale(.96) translateY(-1px) }
+    .nova-venda-flutuante[data-visible="true"] { display: flex }
+
+    footer { margin-top: 44px; font-family: var(--mono); font-size: 11px; color: var(--muted); text-align: center; opacity: .55 }
+
+    /* ── TOAST ── */
+    .toast {
+      position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
+      background: var(--accent); color: #fff; padding: 11px 22px; border-radius: 99px;
+      font-family: var(--mono); font-size: 13px; z-index: 9999; pointer-events: none;
+      animation: fadeUp .2s ease; box-shadow: 0 4px 20px rgba(130,10,209,.35); white-space: nowrap;
+    }
+
+    .spinner {
+      display: inline-block; width: 12px; height: 12px;
+      border: 2px solid rgba(255,255,255,.4); border-top-color: #fff;
+      border-radius: 50%; animation: spin .6s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg) } }
+
+    .sr-only {
+      position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+      overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+    }
+
+    @media (max-width: 520px) {
+      main { padding-left: 14px; padding-right: 14px }
+      .card { padding: 18px 15px }
+      .row2 { grid-template-columns: 1fr }
+      .qr-block { flex-direction: column; align-items: center; padding: 16px }
+      #qr-img { width: 190px; height: 190px }
+      .mv-big { font-size: 26px }
+      .nova-venda-flutuante[data-visible="true"] { display: flex }
+      .header-banner { padding: 36px 20px 30px; border-radius: 0 0 22px 22px }
+      h1 { font-size: 18px }
+    }
+    @media (min-width: 521px) {
+      .nova-venda-flutuante { display: none !important }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="header-banner">
+      <div class="logo-row">
+        <div class="logo-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="8" r="3.5" fill="white"/>
+            <path d="M5 20c0-3.866 3.134-7 7-7s7 3.134 7 7"
+                  stroke="white" stroke-width="2" stroke-linecap="round" fill="none"/>
+          </svg>
+        </div>
+        <h1>PIX Gerador PDV</h1>
+      </div>
+      <p class="sub">Pagamento Digital · EMV BR Code · Padrão BACEN</p>
+    </div>
+  </header>
+
+  <main>
+    <section class="card" aria-label="Configuração da cobrança">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px;flex-wrap:wrap">
+        <h2 class="sec" style="margin:0">Tipo de chave PIX</h2>
+        <button class="lock-toggle" id="lock-btn" type="button" aria-pressed="false" title="Trancar configuração">
+          <span id="lock-icon" aria-hidden="true">🔓</span> <span id="lock-text">Trancar</span>
+        </button>
+      </div>
+
+      <div class="tabs" id="tabs" role="tablist" aria-label="Tipo de chave PIX">
+        <button class="tab" role="tab" aria-selected="true" data-t="email" type="button">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2z" fill="none" stroke="#666" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M22 6l-10 7L2 6" stroke="#666" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span>E-mail</span>
+        </button>
+        <button class="tab" role="tab" aria-selected="false" data-t="cpf" type="button">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z" fill="none" stroke="#666" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M9 9h6M9 13h6M9 17h3" stroke="#666" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          <span>CPF</span>
+        </button>
+        <button class="tab" role="tab" aria-selected="false" data-t="cnpj" type="button">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M20 7H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V9c0-1.1-.9-2-2-2z" fill="none" stroke="#666" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M7 12h1M12 12h1M17 12h1" stroke="#666" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="4" y1="7" x2="20" y2="7" stroke="#666" stroke-width="1.5"/>
+          </svg>
+          <span>CNPJ</span>
+        </button>
+        <button class="tab" role="tab" aria-selected="false" data-t="telefone" type="button">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" fill="none" stroke="#666" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span>Telefone</span>
+        </button>
+        <button class="tab" role="tab" aria-selected="false" data-t="aleatoria" type="button">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M21 2H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h5v4l7-4h8c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z" fill="none" stroke="#666" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M7 9h10M7 13h6" stroke="#666" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          <span>Chave aleatória</span>
+        </button>
+      </div>
+
+      <div class="fields">
+        <div class="field" id="field-chave">
+          <label for="chave" id="lbl-k">E-mail</label>
+          <input id="chave" type="text" placeholder="seuemail@banco.com"
+                 autocomplete="off" spellcheck="false" aria-describedby="vbadge hint-k">
+          <span id="vbadge" class="badge-val" role="status" hidden></span>
+          <span id="hint-k" class="hint">Digite o e-mail cadastrado como chave PIX.</span>
+        </div>
+
+        <div class="row2">
+          <div class="field">
+            <label for="valor">Valor (R$)</label>
+            <input id="valor" type="number" step="0.01" min="0.01" placeholder="0,00" value="10.00">
+          </div>
+          <div class="field" id="field-txid">
+            <label for="txid">TxID <span style="font-size:10px;color:var(--muted)">(opcional)</span></label>
+            <input id="txid" type="text" placeholder="***" value="***" maxlength="25">
+          </div>
+        </div>
+
+        <div class="row2">
+          <div class="field" id="field-nome">
+            <label for="nome">Recebedor <span style="font-size:10px;color:var(--muted)">max 25</span></label>
+            <input id="nome" type="text" placeholder="NOME LOJA" value="LOJA EXEMPLO" maxlength="25">
+          </div>
+          <div class="field" id="field-cidade">
+            <label for="cidade">Cidade <span style="font-size:10px;color:var(--muted)">max 15</span></label>
+            <input id="cidade" type="text" placeholder="SAO PAULO" value="SAO PAULO" maxlength="15">
+          </div>
+        </div>
+
+        <div id="lock-status" class="info info-success" role="status" hidden>
+          🔒 Configuração travada — apenas valor é editável. Clique em "Destrancar" para alterar.
+        </div>
+
+        <button class="btn-gerar" id="btn-gerar" type="button">Gerar QR Code + Copia e Cola</button>
+      </div>
+    </section>
+
+    <section class="card" id="resultado" aria-label="Resultado da cobrança">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:18px">
+        <h2 class="sec" style="margin:0">Resultado</h2>
+        <button class="btn-nova-venda" id="btn-nova-venda" type="button" title="Limpar tudo e começar novo cliente">
+          🔄 Novo Cliente
+        </button>
+      </div>
+
+      <div class="qr-block">
+        <img id="qr-img" src="" alt="QR Code PIX para pagamento">
+        <div class="qr-meta">
+          <div class="mg"><span class="ml">Total</span><span id="rv" class="mv mv-big">R$ 0,00</span></div>
+          <div class="mg"><span class="ml">Recebedor</span><span id="rn" class="mv"></span></div>
+          <div class="mg"><span class="ml">Cidade</span><span id="rc" class="mv" style="font-size:13px;color:var(--muted)"></span></div>
+          <div class="mg"><span class="ml">Tipo de chave</span><span id="rt" class="mv" style="font-size:13px"></span></div>
+        </div>
+      </div>
+
+      <div class="cec">
+        <div class="cec-head">
+          <span class="cec-lbl">Chave PIX (pura)</span>
+          <button class="btn" id="b-chave" type="button" data-copied="false">Copiar chave</button>
+        </div>
+        <div class="cec-box">
+          <span class="cec-txt" id="rk"></span>
+        </div>
+      </div>
+
+      <div class="info" role="note">
+        ⚡ Cole o campo abaixo em qualquer app bancário (Nubank, Inter, BB, Caixa, PicPay…) — valor e dados são preenchidos automaticamente.
+      </div>
+
+      <div class="cec">
+        <div class="cec-head">
+          <span class="cec-lbl">Copia e Cola — Payload EMV</span>
+          <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+            <span id="badge-crc" class="badge-crc" data-valid="true">CRC ok</span>
+            <button class="btn" id="b-pay" type="button" data-copied="true">Copiar copia e cola</button>
+          </div>
+        </div>
+        <div class="cec-box cec-box-highlight">
+          <span class="cec-txt" id="rp" style="word-break:break-all"></span>
+        </div>
+      </div>
+
+      <div class="divider" role="separator"></div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:9px;flex-wrap:wrap;gap:8px">
+        <h3 class="sec" style="margin:0">Payload decodificado (debug)</h3>
+        <button class="btn" id="b-raw" type="button" data-copied="false">Copiar raw</button>
+      </div>
+      <div class="debug-box" id="rdebug"></div>
+
+      <div class="actions">
+        <button class="btn" id="btn-comprovante" type="button">📋 Comprovante</button>
+        <button class="btn" id="btn-imprimir" type="button">🖨️ Imprimir Comprovante</button>
+        <button class="btn" id="btn-pdf" type="button">💾 Salvar Comprovante de Venda</button>
+        <button class="btn" id="btn-linkqr" type="button">Copiar link do QR</button>
+        <button class="btn-nova-venda" id="btn-nova-venda-2" type="button" style="margin-left:auto;">🔄 Novo Cliente</button>
+      </div>
+    </section>
+  </main>
+
+  <button class="nova-venda-flutuante" id="btn-flutuante" type="button" title="Novo Cliente" data-visible="false">
+    🔄 Novo Cliente
+  </button>
+
+  <footer>PIX Gerador · EMV BR Code · padrão BACEN · arquivo local · sem servidor</footer>
+
+  <span id="_c" style="display:none" aria-hidden="true"></span>
+  <span id="_p" style="display:none" aria-hidden="true"></span>
+  <span id="_q" style="display:none" aria-hidden="true"></span>
+
+  <script type="module">
+    import {
+      T, TLBL, tiposChave,
+      gerarPayload, validarChave, debugEMV, fmt, gerarQRCode
+    } from './assets/js/pix-engine.js'
+
+    /* ─── DOM REFS ─── */
+    const $ = id => document.getElementById(id)
+    const tabs = document.querySelectorAll('.tab')
+    const chaveInp = $('chave')
+    const valorInp = $('valor')
+    const txidInp = $('txid')
+    const nomeInp = $('nome')
+    const cidadeInp = $('cidade')
+    const lockBtn = $('lock-btn')
+    const lockIcon = $('lock-icon')
+    const lockText = $('lock-text')
+    const lockStatus = $('lock-status')
+    const vbadge = $('vbadge')
+    const hintK = $('hint-k')
+    const lblK = $('lbl-k')
+    const btnGerar = $('btn-gerar')
+    const resultado = $('resultado')
+    const qrImg = $('qr-img')
+    const rv = $('rv'), rn = $('rn'), rc = $('rc'), rt = $('rt')
+    const rk = $('rk'), rp = $('rp'), rdebug = $('rdebug')
+    const badgeCrc = $('badge-crc')
+    const btnFlutuante = $('btn-flutuante')
+    const hiddenC = $('_c'), hiddenP = $('_p'), hiddenQ = $('_q')
+
+    let tipo = 'email'
+    let isLocked = false
+
+    /* ─── TOAST ─── */
+    function toast(msg, isSuccess = false) {
+      const existing = document.querySelector('.toast')
+      if (existing) existing.remove()
+      const t = document.createElement('div')
+      t.className = 'toast'; t.textContent = msg
+      if (isSuccess) { t.style.background = '#22c55e'; t.style.boxShadow = '0 4px 20px rgba(34,197,94,.35)' }
+      document.body.appendChild(t)
+      setTimeout(() => t.remove(), 2800)
+    }
+
+    /* ─── TABS ─── */
+    function setTipo(t) {
+      tipo = t
+      tabs.forEach(b => b.setAttribute('aria-selected', b.dataset.t === t))
+      const cfg = T[t]
+      lblK.textContent = cfg.lbl
+      chaveInp.placeholder = cfg.ph
+      chaveInp.inputMode = cfg.im
+      hintK.textContent = cfg.hint
+      chaveInp.value = ''; chaveInp.removeAttribute('data-valid')
+      vbadge.hidden = true; chaveInp.focus()
+    }
+    tabs.forEach(tab => tab.addEventListener('click', () => !isLocked && setTipo(tab.dataset.t)))
+
+    /* ─── INPUT / VALIDAÇÃO ─── */
+    function onInput() {
+      const cfg = T[tipo]
+      if (cfg.mask) {
+        const p = chaveInp.selectionStart, antes = chaveInp.value
+        chaveInp.value = cfg.mask(chaveInp.value)
+        try { chaveInp.setSelectionRange(p + (chaveInp.value.length - antes.length), p + (chaveInp.value.length - antes.length)) } catch (e) {}
+      }
+      chaveInp.removeAttribute('data-valid'); vbadge.hidden = true
+    }
+    function validar() {
+      const v = chaveInp.value.trim()
+      if (!v) { vbadge.hidden = true; return true }
+      const r = T[tipo].val(v)
+      vbadge.textContent = (r.ok ? '✓ ' : '✗ ') + r.m
+      vbadge.hidden = false; vbadge.dataset.valid = !!r.ok
+      chaveInp.dataset.valid = !!r.ok; return !!r.ok
+    }
+    chaveInp.addEventListener('input', onInput)
+    chaveInp.addEventListener('blur', validar)
+
+    /* ─── LOCK ─── */
+    function updateLockState() {
+      const fields = [chaveInp, txidInp, nomeInp, cidadeInp]
+      if (isLocked) {
+        lockBtn.setAttribute('aria-pressed', 'true')
+        lockIcon.textContent = '🔒'; lockText.textContent = 'Destrancar'
+        lockStatus.hidden = false
+        fields.forEach(f => f.disabled = true); tabs.forEach(t => t.disabled = true)
+      } else {
+        lockBtn.setAttribute('aria-pressed', 'false')
+        lockIcon.textContent = '🔓'; lockText.textContent = 'Trancar'
+        lockStatus.hidden = true
+        fields.forEach(f => f.disabled = false); tabs.forEach(t => t.disabled = false)
+      }
+    }
+    function toggleLock() {
+      isLocked = !isLocked; updateLockState()
+      toast(isLocked ? '✓ Configuração travada — use o mesmo PIX em múltiplas vendas' : '🔓 Configuração destrancada', true)
+    }
+    lockBtn.addEventListener('click', toggleLock)
+
+    /* ─── GERAR ─── */
+    async function gerar() {
+      const chaveRaw = chaveInp.value.trim()
+      const valor = parseFloat(valorInp.value)
+      const nome = nomeInp.value.trim()
+      const cidade = cidadeInp.value.trim()
+      const txid = txidInp.value.trim() || '***'
+
+      if (!chaveRaw) { toast('⚠ Informe a chave PIX.'); return }
+      const vr = T[tipo].val(chaveRaw)
+      if (!vr.ok) {
+        vbadge.textContent = '✗ ' + vr.m; vbadge.hidden = false; vbadge.dataset.valid = false
+        chaveInp.dataset.valid = false; toast('✗ Chave inválida: ' + vr.m); return
+      }
+      if (!valor || valor <= 0 || isNaN(valor)) { toast('⚠ Informe um valor maior que zero.'); return }
+      if (!nome) { toast('⚠ Informe o nome do recebedor.'); return }
+      if (!cidade) { toast('⚠ Informe a cidade.'); return }
+
+      const btnOrig = btnGerar.textContent
+      btnGerar.textContent = '⏳ Gerando...'; btnGerar.disabled = true
+
+      try {
+        const { payload, chave, nomeN, cidN } = gerarPayload(tipo, chaveRaw, valor, nome, cidade, txid)
+        if (!payload || payload.length < 20) {
+          toast('✗ Erro ao gerar payload EMV'); btnGerar.textContent = btnOrig; btnGerar.disabled = false; return
+        }
+        const dataUrl = await gerarQRCode(payload)
+        qrImg.src = dataUrl; qrImg.removeAttribute('data-error')
+        rv.textContent = fmt(valor); rn.textContent = nomeN; rc.textContent = cidN
+        rt.textContent = TLBL[tipo]; rk.textContent = chave; rp.textContent = payload
+        rdebug.textContent = debugEMV(payload)
+        badgeCrc.textContent = payload.length > 4 ? 'CRC ok' : 'CRC erro'
+        badgeCrc.dataset.valid = payload.length > 4
+        hiddenC.textContent = chave; hiddenP.textContent = payload; hiddenQ.textContent = dataUrl
+        resultado.style.display = 'block'; btnFlutuante.dataset.visible = 'true'
+        setTimeout(() => resultado.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50)
+        document.querySelectorAll('[data-copied]').forEach(b => { b.dataset.copied = false; b.textContent = b.id.replace('b-', 'Copiar ') })
+        $('b-pay').dataset.copied = true
+        toast('✓ QR Code gerado com sucesso!', true)
+      } catch (e) {
+        console.error(e); toast('✗ Erro ao gerar QR Code')
+      } finally {
+        btnGerar.textContent = btnOrig; btnGerar.disabled = false
+      }
+    }
+    btnGerar.addEventListener('click', gerar)
+
+    /* ─── NOVA VENDA ─── */
+    function novaVenda() {
+      resultado.style.display = 'none'; btnFlutuante.dataset.visible = 'false'
+      qrImg.src = ''; qrImg.removeAttribute('data-error')
+      valorInp.value = '10.00'
+      if (!txidInp.disabled) txidInp.value = '***'
+      hiddenC.textContent = ''; hiddenP.textContent = ''; hiddenQ.textContent = ''
+      rv.textContent = 'R$ 0,00'; rn.textContent = ''; rc.textContent = ''; rt.textContent = ''
+      rk.textContent = ''; rp.textContent = ''; rdebug.textContent = ''
+      badgeCrc.textContent = 'CRC ok'; badgeCrc.dataset.valid = true
+      document.querySelectorAll('[data-copied]').forEach(b => { b.dataset.copied = false; b.textContent = b.id.includes('pay') ? 'Copiar copia e cola' : b.id.includes('chave') ? 'Copiar chave' : 'Copiar raw' })
+      $('b-pay').dataset.copied = true
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+      setTimeout(() => { valorInp.focus(); valorInp.select() }, 300)
+      toast('🔄 Pronto para Novo Cliente!', true)
+    }
+    document.querySelectorAll('[id^="btn-nova-venda"]').forEach(b => b.addEventListener('click', novaVenda))
+    btnFlutuante.addEventListener('click', novaVenda)
+
+    /* ─── COPIAR ─── */
+    function cp(btnId, srcId) {
+      const val = $(srcId).textContent; const btn = $(btnId)
+      if (!val) { toast('⚠ Nada para copiar'); return }
+      const done = () => {
+        const orig = btn.textContent; btn.textContent = '✓ Copiado!'; btn.dataset.copied = true
+        setTimeout(() => { btn.textContent = orig; if (btnId !== 'b-pay') btn.dataset.copied = false }, 2200)
+      }
+      if (navigator.clipboard) { navigator.clipboard.writeText(val).then(done).catch(() => fallbackCopy(val, done)) }
+      else { fallbackCopy(val, done) }
+    }
+    function fallbackCopy(val, done) {
+      const ta = document.createElement('textarea')
+      ta.value = val; ta.style.cssText = 'position:fixed;opacity:0'
+      document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); done()
+    }
+    $('b-chave').addEventListener('click', () => cp('b-chave', '_c'))
+    $('b-pay').addEventListener('click', () => cp('b-pay', '_p'))
+    $('b-raw').addEventListener('click', () => cp('b-raw', '_p'))
+    $('btn-linkqr').addEventListener('click', () => {
+      const url = hiddenQ.textContent
+      if (!url) { toast('⚠ Gere o QR Code antes de copiar o link'); return }
+      cp('btn-linkqr', '_q')
+    })
+
+    /* ─── COMPROVANTE ─── */
+    function gerarHTMLComprovante() {
+      const valor = rv.textContent; const nome = rn.textContent; const cidade = rc.textContent
+      const chave = hiddenC.textContent; const payload = hiddenP.textContent
+      const tipoL = rt.textContent; const qrSrc = qrImg.src
+      if (!qrSrc) { toast('⚠ Gere o QR Code antes'); return null }
+      const agora = new Date(); const data = agora.toLocaleDateString('pt-BR')
+      const hora = agora.toLocaleTimeString('pt-BR')
+      const id = Math.random().toString(36).substring(2, 10).toUpperCase()
+      return `<!DOCTYPE html>
+<html lang="pt-BR">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Comprovante PIX - ${nome}</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f0eef5;padding:20px;color:#333}.container{max-width:500px;margin:0 auto;background:#fff;border-radius:18px;box-shadow:0 4px 24px rgba(130,10,209,.12);overflow:hidden}.header{background:linear-gradient(135deg,#820AD1 0%,#5c0696 100%);color:#fff;padding:30px 20px;text-align:center}.header h1{font-size:22px;margin-bottom:5px;font-weight:800}.header p{font-size:12px;opacity:.85}.content{padding:28px 20px}.section{margin-bottom:24px}.section-title{font-size:10px;text-transform:uppercase;letter-spacing:1.2px;color:#999;margin-bottom:10px;font-weight:700}.qr-box{text-align:center;padding:20px;background:#f7f5fa;border-radius:12px;border:1px solid #e8e4f0}.qr-box img{width:220px;height:220px;border-radius:10px}.field{display:flex;justify-content:space-between;padding:11px 0;border-bottom:1px solid #f0ecf8;font-size:14px}.field:last-child{border-bottom:none}.field-label{color:#999;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}.field-value{font-weight:700;color:#1a1a2e;text-align:right;max-width:60%;word-break:break-all}.valor-grande{font-size:34px;color:#820AD1;font-weight:900;text-align:center;margin:20px 0;letter-spacing:-1px}.footer{background:#f7f5fa;padding:18px;text-align:center;border-top:1px solid #e8e4f0;font-size:11px;color:#999}.divider{height:1px;background:#e8e4f0;margin:18px 0}.copy-box{background:#f0ecf8;border-left:3px solid #820AD1;padding:12px;border-radius:6px;font-family:'Courier New',monospace;font-size:11px;word-break:break-all;margin-top:8px;max-height:100px;overflow-y:auto;color:#333}.status{display:inline-block;background:#f0ecf8;color:#820AD1;padding:6px 14px;border-radius:99px;font-size:11px;font-weight:700;margin-top:10px}.actions{display:flex;gap:10px;margin-top:20px;justify-content:center}.btn{padding:10px 22px;border:none;border-radius:99px;cursor:pointer;font-size:13px;font-weight:700;transition:all .2s}.btn-primary{background:#820AD1;color:#fff}.btn-primary:hover{background:#6a08ab}.btn-secondary{background:#f0ecf8;color:#820AD1}@media print{body{background:#fff;padding:0}.actions{display:none}}
+</style></head>
+<body><div class="container"><div class="header"><h1>✓ Comprovante PIX</h1><p>Transação Gerada</p></div><div class="content">
+<div class="section"><div class="section-title">Escaneie para pagar</div><div class="qr-box"><img src="${qrSrc}" alt="QR Code PIX"></div></div><div class="valor-grande">${valor}</div>
+<div class="section"><div class="field"><div class="field-label">Recebedor</div><div class="field-value">${nome}</div></div><div class="field"><div class="field-label">Localidade</div><div class="field-value">${cidade}</div></div><div class="field"><div class="field-label">Tipo de Chave</div><div class="field-value">${tipoL}</div></div></div>
+<div class="section"><div class="section-title">Chave PIX</div><div class="copy-box">${chave}</div></div>
+<div class="section"><div class="section-title">Copia e Cola (Payload EMV)</div><div class="copy-box">${payload}</div></div>
+<div class="divider"></div><div class="section"><div class="field"><div class="field-label">Data</div><div class="field-value">${data}</div></div><div class="field"><div class="field-label">Hora</div><div class="field-value">${hora}</div></div><div class="field"><div class="field-label">ID Comprovante</div><div class="field-value">${id}</div></div></div>
+<div style="text-align:center;margin-top:18px"><div class="status">Pagamento Concluído</div></div></div>
+<div class="footer"><p>PIX Gerador · Padrão Banco Central do Brasil · BACEN</p><p>Protocolo: ${id} | ${data} às ${hora}</p></div>
+<div class="actions"><button class="btn btn-primary" onclick="window.print()">🖨️ Imprimir</button><button class="btn btn-secondary" onclick="baixarComprovante()">💾 Baixar</button></div></div>
+<script>function baixarComprovante(){const l=document.createElement('a');l.href=window.location.href;l.download='comprovante-pix.html';l.click();}<\/script></body></html>`
+    }
+    $('btn-comprovante').addEventListener('click', () => {
+      const html = gerarHTMLComprovante(); if (!html) return
+      const popup = window.open('', '_blank', 'width=550,height=800')
+      if (!popup) { toast('⚠ Permita popups para abrir o comprovante'); return }
+      popup.document.open(); popup.document.write(html); popup.document.close()
+    })
+    $('btn-imprimir').addEventListener('click', () => {
+      const html = gerarHTMLComprovante(); if (!html) return
+      const popup = window.open('', '_blank', 'width=550,height=800')
+      if (!popup) { toast('⚠ Permita popups para imprimir'); return }
+      popup.document.open(); popup.document.write(html); popup.document.close()
+      const img = popup.document.querySelector('img')
+      if (img && img.complete) setTimeout(() => popup.print(), 500)
+      else if (img) img.onload = () => setTimeout(() => popup.print(), 500)
+      else popup.print()
+    })
+    $('btn-pdf').addEventListener('click', async () => {
+      const html = gerarHTMLComprovante(); if (!html) return
+      const container = document.createElement('div')
+      container.style.cssText = 'position:absolute;left:-9999px;top:0;width:500px'
+      container.innerHTML = html; document.body.appendChild(container)
+      await new Promise(r => setTimeout(r, 500))
+      try {
+        const canvas = await html2canvas(container, { scale: 2, useCORS: true, allowTaint: true, logging: false })
+        const imgData = canvas.toDataURL('image/png')
+        const { jsPDF } = window.jspdf
+        const pdf = new jsPDF({ orientation: 'portrait', unit: 'px', format: [canvas.width, canvas.height] })
+        pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height)
+        pdf.save('comprovante-pix.pdf'); toast('✓ PDF salvo com sucesso!', true)
+      } catch (e) { console.error(e); toast('✗ Erro ao gerar PDF') }
+      finally { document.body.removeChild(container) }
+    })
+
+    /* ─── ENTER ─── */
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && e.target.tagName !== 'BUTTON') gerar()
+    })
+  </script>
+</body>
+</html>

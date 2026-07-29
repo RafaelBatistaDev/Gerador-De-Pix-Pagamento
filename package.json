@@ -1,0 +1,30 @@
+{
+  "name": "pix-gerador",
+  "version": "2.0.0",
+  "description": "Suite completa de ferramentas web para geração de cobranças PIX com QR Code e Copia e Cola - Padrão EMV BR Code do Banco Central",
+  "type": "module",
+  "private": true,
+  "keywords": [
+    "pix",
+    "gerador-pix",
+    "qrcode",
+    "emv",
+    "br-code",
+    "banco-central",
+    "pagamento",
+    "cobranca"
+  ],
+  "author": {
+    "name": "Rafael Batista",
+    "url": "https://github.com/RafaelBatistaDev"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RafaelBatistaDev/Gerador-De-Pix-Pagamento.git"
+  },
+  "bugs": {
+    "url": "https://github.com/RafaelBatistaDev/Gerador-De-Pix-Pagamento/issues"
+  },
+  "homepage": "https://github.com/RafaelBatistaDev/Gerador-De-Pix-Pagamento#readme"
+}
