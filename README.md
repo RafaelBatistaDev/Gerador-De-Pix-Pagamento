@@ -7,7 +7,7 @@
   <img src="https://img.shields.io/badge/PIX-00E676?style=for-the-badge&logo=pix&logoColor=black" alt="PIX BC">
 </p>
 
-# 📱 PIX Gerador — Suite de Cobranças PIX
+# 📱 PIX Gerador — Solução de Cobranças PIX
 
 > Conjunto completo de ferramentas web para geração de cobranças **PIX** com **QR Code** e **Copia e Cola** (Payload EMV BR Code), seguindo o padrão oficial do **Banco Central do Brasil**.
 
